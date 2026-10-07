@@ -1,0 +1,49 @@
+name: VM6 Origin Alias Gate
+on:
+  pull_request:
+    branches:
+      - release-main
+      - origin/main
+permissions:
+  contents: read
+jobs:
+  gate:
+    name: vm6-origin-alias-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: Mergifyio/setup-cli@v1.3.0
+        with:
+          mergify_cli_version: 2026.10.3
+      - name: Detect Mergify scopes
+        id: scopes
+        env:
+          BASE: ${{ github.base_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mergify --version
+          mergify ci scopes --config .mergify.yml --base "$BASE" --head HEAD --write scopes.json
+          cat scopes.json
+          if jq -e '.scopes | index("critical") != null' scopes.json >/dev/null; then
+            echo 'critical=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'critical=false' >> "$GITHUB_OUTPUT"
+          fi
+          if jq -e '.scopes | index("ignored") != null' scopes.json >/dev/null; then
+            echo 'ignored=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ignored=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Scope detector sanity
+        shell: bash
+        run: test '${{ steps.scopes.outputs.ignored }}' = 'true'
+      - name: Controlled critical gate
+        if: steps.scopes.outputs.critical == 'true'
+        shell: bash
+        run: |
+          echo 'VM6 controlled critical gate: critical scope reached'
+          exit 1
