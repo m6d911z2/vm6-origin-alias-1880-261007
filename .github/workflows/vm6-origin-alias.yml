@@ -6,6 +6,7 @@ on:
       - origin/main
       - origin/repro-261007
       - origin/repro2-261007
+      - origin/repro3-261007
 permissions:
   contents: read
 jobs:
