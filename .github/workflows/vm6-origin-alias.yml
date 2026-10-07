@@ -4,6 +4,7 @@ on:
     branches:
       - release-main
       - origin/main
+      - origin/repro-261007
 permissions:
   contents: read
 jobs:
