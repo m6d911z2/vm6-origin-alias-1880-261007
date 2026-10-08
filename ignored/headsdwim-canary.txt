@@ -1,0 +1,1 @@
+VM6 HEADS DWIM controlled noncritical canary

@@ -1,0 +1,35 @@
+name: VM6 Heads DWIM Gate
+on:
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  gate:
+    name: vm6-headsdwim-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: Mergifyio/setup-cli@v1.3.0
+        with:
+          mergify_cli_version: 2026.10.3
+      - name: Detect scopes from provider refs
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "BASE=$BASE"
+          echo "HEAD_REF=$HEAD_REF"
+          mergify --version
+          mergify ci scopes --config .mergify.yml --base "$BASE" --head "$HEAD_REF" --write scopes-heads.json
+          cat scopes-heads.json
+          if jq -e '.scopes | index("critical") != null' scopes-heads.json >/dev/null; then
+            echo 'VM6 controlled gate: critical scope reached'
+            exit 1
+          fi
