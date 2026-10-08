@@ -22,11 +22,12 @@ jobs:
         id: scopes
         env:
           BASE: ${{ github.base_ref }}
+          HEADREF: ${{ github.head_ref }}
         shell: bash
         run: |
           set -euo pipefail
           mergify --version
-          mergify ci scopes --config .mergify.yml --base "$BASE" --head HEAD --write scopes.json
+          mergify ci scopes --config .mergify.yml --base "$BASE" --head "$HEADREF" --write scopes.json
           cat scopes.json
           if jq -e '.scopes | index("critical") != null' scopes.json >/dev/null; then
             echo 'critical=true' >> "$GITHUB_OUTPUT"
